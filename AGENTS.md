@@ -50,6 +50,7 @@ DeepSeek Harness: `dsh plugin --profile web add @roarpeng/graphflow` (or `npx @r
 
 ## 开工前先读
 
+- [docs/memory/STATE.md](docs/memory/STATE.md) —— **先看这个**：现在是什么状态、下一步要做什么、有什么已知行为。
 - [docs/memory/DECISIONS.md](docs/memory/DECISIONS.md) —— 已经定过什么、为什么、什么条件下重新考虑。动手前先查，避免把定过的事重新翻案。
 - [docs/memory/LESSONS.md](docs/memory/LESSONS.md) —— 可复用的踩坑教训（插件硬编码、沙箱限制等）。遇到同类现象先查这里。
 - 要改本机 DSH 配置或 `node_modules` 时，[.dsh-usage-patch/README.md](.dsh-usage-patch/README.md) 是先例与重放方式。
@@ -60,6 +61,7 @@ DeepSeek Harness: `dsh plugin --profile web add @roarpeng/graphflow` (or `npx @r
 
 - 决策 / 因果 → 追加到 `DECISIONS.md`；推翻旧条目时改成「已被 #### 取代」并链到新条目，不要删。
 - 教训 → 追加到 `LESSONS.md`，写成「现象 → 原因 → 下次怎么做」。
+- 当前状态（未完成的、环境现状）→ **覆盖** `STATE.md`，不要往下堆。
 - 只是过程细节（改过哪几行）→ 不写，git 里有。
 
 ## 拿不准就问
