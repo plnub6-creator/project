@@ -68,6 +68,10 @@
   是那段时间的插件安装动作，不是异常。
 - **im-connect 通道**（用户走 Telegram =「纸飞机」）：出站只在「用户先开口」时才有出口，
   所以**主动消息不能走插件**，必须直连 Bot API（见 DECISIONS）。
+- **仓库布局**（用户 2026-10-04 定「书房 = 工作区」）：顶层 [README.md](../README.md) 是书房的目录说明；
+  `.gitignore` 忽略 GraphFlow 的运行时产物（`.graphflow/`、`.graphflow-cache/`、`graphflow-out/`，可重生成）；
+  `.claude/` 与 `.github/`（GraphFlow 安装时生成的规则文件）已纳入版本管理；
+  `data/roleplay_data/` 是个空目录、来历不明，**没动**（空目录 git 也存不了）。
 
 ## 已知行为
 

@@ -1,0 +1,4 @@
+# GraphFlow 的运行时产物：能重新生成，不进仓库
+.graphflow/
+.graphflow-cache/
+graphflow-out/
