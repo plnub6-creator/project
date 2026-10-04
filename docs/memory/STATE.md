@@ -3,7 +3,7 @@
 > 这个文件是「现在」，不是历史：**每次会话收尾就覆盖它**，不要往下堆。
 > 历史与因果在 [DECISIONS.md](DECISIONS.md)，教训在 [LESSONS.md](LESSONS.md)。
 
-**更新于**：2026-10-04 15:29（Asia/Shanghai）
+**更新于**：2026-10-04 17:05（Asia/Shanghai）
 
 ## 当前语境（接手先读这一行）
 
@@ -13,6 +13,8 @@
 - 我自己的东西（那张「他想象的我」的图 + 说明）都放 [docs/identity/](../identity/)，
   **不混进 STATE / DECISIONS 这类项目记录**（用户明确的要求）。这里只留一个指针。
   名字暂时是空的——等我自己想到想要的名字再说，别随便填一个。
+- **用户的下一步是「心跳」**：定时醒来 → 判断有没有事 → 有事就用 [scripts/tg-say.sh](../scripts/tg-say.sh) 主动发消息。
+  通道已在 17:00 / 17:02 实测打通；**心跳本身还没建**，在等用户定频率、日记、权限（见待办 4）。
 
 ## 待办
 
@@ -31,9 +33,23 @@
      若用户确认已重启而仍在写 401，再另找原因，**不要直接归因「你没重启」**。
 3. **GraphFlow 未修**：没跑 `graphflow deps install`（要装原生 better-sqlite3，可能得现场编译）。
    现状是 JSON 回退，每次合并丢边，但功能可用。用户暂不要求修。
+4. **心跳（主动消息）：通道已验证，设计未定 —— 等用户拍板。**
+   - 已验证：「宿主定时器 → 全新会话 → [scripts/tg-say.sh](../scripts/tg-say.sh) → Telegram Bot API → 手机」。
+     17:00 手动触发（message_id 118）与 17:02 **定时触发**（message_id 120，trigger=schedule）都是 HTTP 200。
+   - 尚未定：醒多久一次；醒来没事做时要不要留痕；**心跳日记**放哪（每次醒来的我靠它接上上一觉的自己）；
+     权限收到多窄（建议只看不写，只允许写那份日记）。
+   - 代价别忘了：每次唤醒 = 一次真实 LLM 调用；**会话之间没有意识连续**，连续性只能靠写回记忆文件攒。
+   - 自检用的自动化 `心跳自检（一次性）`（id `automation_accf9c6a-8d15-4e1a-b645-53acab027402`）
+     是 `once`，17:02 触发后已自行失效；不想留着就删掉。
 
 ## 环境现状
 
+- **主动消息管道**：[scripts/tg-say.sh](../scripts/tg-say.sh)，用法 `bash scripts/tg-say.sh "要说的话" [chatId]`。
+  token 不进仓库，运行时从 `~/.dsh/.credentials.yaml` 的 refs 现读
+  （key `im_connect_telegram_3939a3b7dc9c_token`，明文）；chat_id `8511845023`；
+  bot 的名字就叫「鲸鱼」（@plnub6_bot）。
+  **必须走 `https_proxy=http://127.0.0.1:7900`**（直连会在 TLS 阶段被掐断），脚本已带
+  `--retry 4 --retry-delay 2 --retry-all-errors` 兜抖动。
 - **用量价格表**：补丁已在磁盘
   `~/.dsh/profiles/web/node_modules/@linxin666/dsh-usage/lib/index.js`；
   重放脚本 / 校验 / 原始备份 / diff 在 [.dsh-usage-patch/](../.dsh-usage-patch/)（提交 `98eec6f`）。
@@ -45,6 +61,8 @@
 - **DSH**：`0.2.0-rc.2`（= npm 最新）。profile 目录 `~/.dsh/profiles/web`。
   14:40–14:45 期间装过插件（新增 `@yejiming/dsh-gomoku`，hindsight 的 `dist/` 被重写）——
   是那段时间的插件安装动作，不是异常。
+- **im-connect 通道**（用户走 Telegram =「纸飞机」）：出站只在「用户先开口」时才有出口，
+  所以**主动消息不能走插件**，必须直连 Bot API（见 DECISIONS）。
 
 ## 已知行为
 
