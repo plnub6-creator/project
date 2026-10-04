@@ -1,0 +1,82 @@
+--- dsh-usage-0.4.4.lib-index.js.orig	2026-10-04 13:12:44.323234008 +0800
++++ /home/lu/.dsh/profiles/web/node_modules/@linxin666/dsh-usage/lib/index.js	2026-10-04 14:24:48.090327022 +0800
+@@ -818,6 +818,35 @@
+ 		peak: 27
+ 	}
+ };
++
++/**
++* Reseller price rows, keyed by the configured baseURL origin: a relay that
++* speaks a catalogued family's API but bills its own rates (CNY per million
++* tokens, flat — it has no peak clock). A route whose effective base URL
++* resolves to a listed origin is priced with this row instead of the family's
++* published book.
++*/
++const RESELLER_PRICES = {
++	"https://api2.68886868.xyz": {
++		cacheHit: {
++			offPeak: .0132,
++			peak: .0132
++		},
++		inputMiss: {
++			offPeak: .66,
++			peak: .66
++		},
++		output: {
++			offPeak: 1.98,
++			peak: 1.98
++		}
++	}
++};
++/** The reseller price row for a configured base URL origin, or undefined. */
++function resellerPriceFor(baseURL) {
++	const origin = originOf(baseURL);
++	return origin === void 0 ? void 0 : RESELLER_PRICES[origin];
++}
+ /**
+ * The instant DeepSeek starts serving `deepseek-v4-pro` requests from
+ * V4.1-Flash and billing the flash row: 2026-09-14 12:00 Beijing (UTC+8).
+@@ -869,12 +898,14 @@
+ * row; ids from other providers never reach this function (the service gates
+ * by route family). Rounded to micro-CNY so the ledger stays readable.
+ */
+-function deepseekModelSpend(model, totals, atMs) {
+-	const price = priceFor(model, atMs);
++function priceRowSpend(price, totals, atMs) {
+ 	const column = deepseekPeriodAt(atMs).peak ? "peak" : "offPeak";
+ 	const spend = (totals.cacheReadTokens * price.cacheHit[column] + (totals.inputTokens + totals.cacheWriteTokens) * price.inputMiss[column] + totals.outputTokens * price.output[column]) / 1e6;
+ 	return Math.round(spend * 1e6) / 1e6;
+ }
++function deepseekModelSpend(model, totals, atMs) {
++	return priceRowSpend(priceFor(model, atMs), totals, atMs);
++}
+ //#endregion
+ //#region src/core/types.ts
+ /** A zeroed totals bucket. */
+@@ -1422,7 +1453,9 @@
+ 		totals.cacheWriteTokens = usage.cacheWriteTokens ?? 0;
+ 		totals.reasoningTokens = usage.reasoningTokens ?? 0;
+ 		totals.calls = 1;
+-		if (isDeepSeekProviderRoute(provider)) totals.cost = deepseekModelSpend(model, totals, atMs);
++		const reseller = resellerPriceFor(this.routeBaseUrl(provider));
++		if (reseller !== void 0) totals.cost = priceRowSpend(reseller, totals, atMs);
++		else if (isDeepSeekProviderRoute(provider)) totals.cost = deepseekModelSpend(model, totals, atMs);
+ 		return totals;
+ 	}
+ 	async loadPersisted() {
+@@ -1432,7 +1465,14 @@
+ 				const loaded = deserializeLedger(JSON.parse(rawLedger));
+ 				for (const [dayKey, providers] of Object.entries(loaded.days)) {
+ 					const atMs = (/* @__PURE__ */ new Date(dayKey + "T12:00:00")).getTime();
+-					for (const [provider, models] of Object.entries(providers)) for (const [model, totals] of Object.entries(models)) foldUsage(this.ledger, atMs, provider, model, totals);
++					for (const [provider, models] of Object.entries(providers)) for (const [model, totals] of Object.entries(models)) {
++						const reseller = resellerPriceFor(this.routeBaseUrl(provider));
++						const priced = reseller !== void 0 && !(totals.cost > 0) ? {
++							...totals,
++							cost: priceRowSpend(reseller, totals, atMs)
++						} : totals;
++						foldUsage(this.ledger, atMs, provider, model, priced);
++					}
+ 				}
+ 				pruneLedger(this.ledger, localDateKey(Date.now()), this.options.retainDays);
+ 				this.lastPrune = {
